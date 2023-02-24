@@ -18,13 +18,14 @@
       <h2 style="padding: 0px; margin: 0px; font-size: 3em;">
         Kepler's Laws</br><span style="font-size: 0.8em;">Simulation</span>
       </h2>
-      <p class="neuropol">
-        <b>Pi Ko</b>
-        (pk2269@nyu.edu),
-        <b>Marwan Ibrahim</b>
-        (msi9696@nyu.edu)
-      </p>
     </div>
+
+    <p class="neuropol" style="position:absolute;left:20px;bottom:0px;z-index:1000000005">
+      <b>Pi Ko</b>
+      (pk2269@nyu.edu)<br>
+      <b>Marwan Ibrahim</b>
+      (msi9696@nyu.edu)
+    </p>
 
     <!-- Loading Screen -->
     <!-- <div class="loading-screen" id="loading-screen">
@@ -286,7 +287,7 @@
           'textures/2_no_clouds_4k.jpg',
         )
         const materialEarth = new THREE.MeshPhongMaterial({ map: textureEarth })
-        const geometry = new THREE.SphereGeometry(15, 32, 16)
+        const geometry = new THREE.SphereGeometry(5, 32, 16)
         const sphere = new THREE.Mesh(geometry, materialEarth)
         earthModel = sphere
         scene.add(sphere)
@@ -304,8 +305,8 @@
 
 
         const controls = new OrbitControls(camera, renderer.domElement)
+        controls.enableRotate =false;
         controls.minPolarAngle = Math.PI * 0.3
-
         controls.target.set(0, 100, 0)
         controls.update()
 
@@ -333,10 +334,10 @@
         
         earthModel.rotation.y += 0.2
         const scale = 100;
-        sunModel.position.x = scale*4;
+        sunModel.position.x = scale*0;
         sunModel.position.y = 0;
 
-        earthModel.position.x = scale*5*Math.cos(0.1*3.141592*clock.getElapsedTime());
+        earthModel.position.x = scale*3*Math.cos(0.1*3.141592*clock.getElapsedTime());
         earthModel.position.z = scale*3*Math.sin(0.1*3.141592*clock.getElapsedTime());
         
         console.log(earthModel.position.x,earthModel.position.y);
