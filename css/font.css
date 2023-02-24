@@ -1,0 +1,35 @@
+/* Import the fonts from fonts folder */
+@font-face {
+    font-family: 'Glitch';
+    src: url('../fonts/glitch.otf');
+}
+
+/* Import the same for Neuropol */
+@font-face {
+    font-family: 'Neuropol';
+    src: url('../fonts/neuropol.otf');
+}
+
+/* Declare a class which uses Neuropol */
+.neuropol {
+    font-family: 'Neuropol';
+    color: #00ffff;
+}
+
+/* Declare a class which uses Glitch */
+.glitch {
+    font-family: 'Glitch';
+    color: #00ffff;
+}
+
+/* Create a class called logo, and add glow , and use Glitch font*/
+.logo {
+    position: absolute;
+    z-index: 10000000000000;
+    font-family: 'Glitch';
+    color: #00ffff;
+    top: 35px;
+    padding: 0px;
+    margin: 0px;
+    text-align: center;
+}

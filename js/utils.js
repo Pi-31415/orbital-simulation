@@ -1,3 +1,5 @@
+// Utility Functions
+
 $("header").addClass("ready");
 $("footer").addClass("ready");
 
@@ -102,7 +104,7 @@ var ParticleEngine = (function () {
       {
         ellipseWidth: 400,
         ellipseHeight: 100,
-        alpha: 0.6,
+        alpha: 0.2,
         offsetX: 0,
         offsetY: 0,
         color: "#6ac6e8",
@@ -434,3 +436,31 @@ var particles;
     particles.resize();
   }
 })();
+
+// Hide the class called loading screen after 3 seconds of loading, fade out
+setTimeout(function () {
+  $("#loading-screen").fadeOut(5000);
+});
+
+
+// Automatically readjust teh canvas size when the window is resized for #projector
+$(window).resize(function () {
+  var canvas = document.getElementById("projector");
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  console.log("resizing");
+});
+
+
+// When the user clicks on any button, play the sound sounds/click.mp3
+$(".button").click(function () {
+  var audio = new Audio("./sounds/click.mp3");
+  audio.play();
+});
+
+// When the user hovers on any button, play the sound sounds/toggle.mp3
+
+$(".button").hover(function () {
+  var audio = new Audio("./sounds/toggle.mp3");
+  audio.play();
+});
