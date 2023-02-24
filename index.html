@@ -192,14 +192,26 @@
       import Stats from 'three/addons/libs/stats.module.js'
       import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
       import { FBXLoader } from 'three/addons/loaders/FBXLoader.js'
+      import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js'
+      import { RenderPass } from 'three/addons/postprocessing/RenderPass.js'
+      import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js'
+      import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js'
 
       let earthModel, sunModel
 
-      let camera, scene, renderer, stats
+      let camera, scene, renderer, stats, composer
 
       const clock = new THREE.Clock()
 
       let mixer
+
+      // Bloom Parameters
+      const params = {
+        exposure: 1,
+        bloomStrength: 0.5,
+        bloomThreshold: 0,
+        bloomRadius: 0.2,
+      }
 
       init()
       animate()
@@ -219,6 +231,13 @@
         scene = new THREE.Scene()
         scene.background = new THREE.Color(0x111111)
         // scene.fog = new THREE.Fog( 0xa0a0a0, 200, 1000 );
+
+
+        renderer = new THREE.WebGLRenderer({ antialias: true })
+        renderer.setPixelRatio(window.devicePixelRatio)
+        renderer.setSize(window.innerWidth, window.innerHeight)
+        renderer.shadowMap.enabled = true
+        container.appendChild(renderer.domElement)
 
         const hemiLight = new THREE.HemisphereLight(0x555555, 0xa0a0a0, 0.9)
         hemiLight.position.set(30, 200, 0)
@@ -247,6 +266,18 @@
         grid.material.transparent = true
         scene.add(grid)
 
+        // Add GLow
+        const renderScene = new RenderPass( scene, camera );
+
+				const bloomPass = new UnrealBloomPass( new THREE.Vector2( window.innerWidth, window.innerHeight ), 1.5, 0.4, 0.85 );
+				bloomPass.threshold = params.bloomThreshold;
+				bloomPass.strength = params.bloomStrength;
+				bloomPass.radius = params.bloomRadius;
+
+				composer = new EffectComposer( renderer );
+				composer.addPass( renderScene );
+				composer.addPass( bloomPass );
+
         // Loading the Earth
         const textureEarth = new THREE.TextureLoader().load(
           'textures/2_no_clouds_4k.jpg',
@@ -264,25 +295,13 @@
         const sphereSun = new THREE.Mesh(geometrySun, materialSun)
         sunModel = sphereSun
 
-        // Add glow to sun
-        const sunGlow = new THREE.Mesh(
-          new THREE.SphereGeometry(50, 32, 16),
-          new THREE.MeshBasicMaterial({
-            color: 0xffff00,
-            transparent: true,
-            opacity: 0.5,
-          }),
-        )
         scene.add(sphereSun)
         sunModel.position.set(100, 100, 100)
 
-        renderer = new THREE.WebGLRenderer({ antialias: true })
-        renderer.setPixelRatio(window.devicePixelRatio)
-        renderer.setSize(window.innerWidth, window.innerHeight)
-        renderer.shadowMap.enabled = true
-        container.appendChild(renderer.domElement)
+
 
         const controls = new OrbitControls(camera, renderer.domElement)
+        controls.minPolarAngle = Math.PI * 0.3
         controls.target.set(0, 100, 0)
         controls.update()
 
@@ -297,6 +316,7 @@
         camera.aspect = window.innerWidth / window.innerHeight
         camera.updateProjectionMatrix()
         renderer.setSize(window.innerWidth, window.innerHeight)
+        composer.setSize( width, height );
       }
 
       function animate() {
@@ -306,6 +326,7 @@
         renderer.render(scene, camera)
         earthModel.rotation.y += 0.05
         stats.update()
+        composer.render();
       }
     </script>
   </body>
