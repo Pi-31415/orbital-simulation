@@ -9,19 +9,25 @@
   <body>
     <!-- Main Body -->
     <!-- Particles -->
-    <canvas id="projector">
+    <!-- <canvas id="projector">
       Your browser does not support the Canvas element.
-    </canvas>
+    </canvas> -->
 
     <!-- Logo -->
     <div class="logo">
-      <h2 style="padding: 0px;
-      margin: 0px;font-size: 3em;">Kepler's Laws Simulation</h2>
-      <p class="neuropol"><b>Pi Ko</b> (pk2269@nyu.edu), <b>Marwan Ibrahim </b>(msi9696@nyu.edu)</p>
+      <h2 style="padding: 0px; margin: 0px; font-size: 3em;">
+        Kepler's Laws Simulation
+      </h2>
+      <p class="neuropol">
+        <b>Pi Ko</b>
+        (pk2269@nyu.edu),
+        <b>Marwan Ibrahim</b>
+        (msi9696@nyu.edu)
+      </p>
     </div>
 
     <!-- Loading Screen -->
-    <div class="loading-screen" id="loading-screen">
+    <!-- <div class="loading-screen" id="loading-screen">
       <div class="loader">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 415.04 415.04">
           <defs>
@@ -127,7 +133,7 @@
         </svg>
       </div>
       <h3 class="neuropol" style="text-align: center;">Loading . . .</h3>
-    </div>
+    </div> -->
 
     <!-- Navbar -->
     <header>
@@ -138,6 +144,9 @@
         <div class="right"><div></div></div>
       </div>
     </header>
+
+    <!-- div called three-renderer -->
+    <div id="three-renderer"></div>
 
     <div class="btn-container">
       <div class="button ice">Kepler's 1st Law</div>
@@ -160,49 +169,143 @@
       <div class="box"></div>
     </footer>
     <!-- Add jquery -->
+    <script
+      async
+      src="https://unpkg.com/es-module-shims@1.6.3/dist/es-module-shims.js"
+    ></script>
+
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://unpkg.com/three@0.150.0/build/three.module.js",
+          "three/addons/": "https://unpkg.com/three@0.150.0/examples/jsm/"
+        }
+      }
+    </script>
     <script src="js/easeljs-0.7.1.min.js"></script>
     <script src="js/TweenMax.min.js"></script>
     <script src="js/jquery.min.js"></script>
     <script src="js/utils.js"></script>
 
     <script type="module">
-      import * as THREE from './js/three.module.js'
+      import * as THREE from 'three'
+      import Stats from 'three/addons/libs/stats.module.js';
+      import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
+      import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
 
-      const scene = new THREE.Scene()
-      const camera = new THREE.PerspectiveCamera(
-        75,
-        window.innerWidth / window.innerHeight,
-        0.1,
-        1000,
-      )
 
-      const renderer = new THREE.WebGLRenderer()
-      renderer.setSize(window.innerWidth, window.innerHeight)
-      // Always resize the renderer to full screen when the window is resized
-      window.addEventListener('resize', () => {
-        renderer.setSize(window.innerWidth, window.innerHeight)
-        camera.aspect = window.innerWidth / window.innerHeight
-        camera.updateProjectionMatrix()
-      })
-      document.body.appendChild(renderer.domElement)
+      
+      let camera, scene, renderer, stats;
 
-      const geometry = new THREE.BoxGeometry(1, 1, 1)
-      const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 })
-      const cube = new THREE.Mesh(geometry, material)
-      scene.add(cube)
+			const clock = new THREE.Clock();
 
-      camera.position.z = 5
+			let mixer;
 
-      function animate() {
-        requestAnimationFrame(animate)
+			init();
+			animate();
 
-        cube.rotation.x += 0.01
-        cube.rotation.y += 0.01
+			function init() {
 
-        renderer.render(scene, camera)
-      }
+				const container = document.createElement( 'div' );
+				document.body.appendChild( container );
 
-      animate()
+				camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 1, 2000 );
+				camera.position.set( 100, 200, 300 );
+
+				scene = new THREE.Scene();
+				scene.background = new THREE.Color( 0xa0a0a0 );
+				scene.fog = new THREE.Fog( 0xa0a0a0, 200, 1000 );
+
+				const hemiLight = new THREE.HemisphereLight( 0xffffff, 0x444444 );
+				hemiLight.position.set( 0, 200, 0 );
+				scene.add( hemiLight );
+
+				const dirLight = new THREE.DirectionalLight( 0xffffff );
+				dirLight.position.set( 0, 200, 100 );
+				dirLight.castShadow = true;
+				dirLight.shadow.camera.top = 180;
+				dirLight.shadow.camera.bottom = - 100;
+				dirLight.shadow.camera.left = - 120;
+				dirLight.shadow.camera.right = 120;
+				scene.add( dirLight );
+
+				// scene.add( new THREE.CameraHelper( dirLight.shadow.camera ) );
+
+				// ground
+				const mesh = new THREE.Mesh( new THREE.PlaneGeometry( 2000, 2000 ), new THREE.MeshPhongMaterial( { color: 0x999999, depthWrite: false } ) );
+				mesh.rotation.x = - Math.PI / 2;
+				mesh.receiveShadow = true;
+				scene.add( mesh );
+
+				const grid = new THREE.GridHelper( 2000, 20, 0x000000, 0x000000 );
+				grid.material.opacity = 0.2;
+				grid.material.transparent = true;
+				scene.add( grid );
+
+				// model
+
+        const textureEarth = new THREE.TextureLoader().load( 'textures/Earth_Lod.png' )
+        const materialEarth = new THREE.MeshBasicMaterial( { map: textureEarth } );
+
+				const loader = new FBXLoader();
+				loader.load( 'models/fbx/Earth_Lod.fbx', function ( object ) {
+					object.traverse( function ( child ) {
+						if ( child.isMesh ) {
+							child.castShadow = true;
+							child.receiveShadow = true;
+              child.material.map = textureEarth
+              child.material.needsUpdate = true;
+						}
+					} );
+					scene.add( object );
+				} );
+
+
+
+				renderer = new THREE.WebGLRenderer( { antialias: true } );
+				renderer.setPixelRatio( window.devicePixelRatio );
+				renderer.setSize( window.innerWidth, window.innerHeight );
+				renderer.shadowMap.enabled = true;
+				container.appendChild( renderer.domElement );
+
+				const controls = new OrbitControls( camera, renderer.domElement );
+				controls.target.set( 0, 100, 0 );
+				controls.update();
+
+				window.addEventListener( 'resize', onWindowResize );
+
+				// stats
+				stats = new Stats();
+				container.appendChild( stats.dom );
+
+			}
+
+			function onWindowResize() {
+
+				camera.aspect = window.innerWidth / window.innerHeight;
+				camera.updateProjectionMatrix();
+
+				renderer.setSize( window.innerWidth, window.innerHeight );
+
+			}
+
+			//
+
+			function animate() {
+
+				requestAnimationFrame( animate );
+
+				const delta = clock.getDelta();
+
+				if ( mixer ) mixer.update( delta );
+
+				renderer.render( scene, camera );
+
+				stats.update();
+
+			}
+
+
     </script>
   </body>
 </html>
