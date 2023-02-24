@@ -189,123 +189,124 @@
 
     <script type="module">
       import * as THREE from 'three'
-      import Stats from 'three/addons/libs/stats.module.js';
+      import Stats from 'three/addons/libs/stats.module.js'
       import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
-      import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
+      import { FBXLoader } from 'three/addons/loaders/FBXLoader.js'
 
+      let earthModel, sunModel
 
-      
-      let camera, scene, renderer, stats;
+      let camera, scene, renderer, stats
 
-			const clock = new THREE.Clock();
+      const clock = new THREE.Clock()
 
-			let mixer;
+      let mixer
 
-			init();
-			animate();
+      init()
+      animate()
 
-			function init() {
+      function init() {
+        const container = document.createElement('div')
+        document.body.appendChild(container)
 
-				const container = document.createElement( 'div' );
-				document.body.appendChild( container );
+        camera = new THREE.PerspectiveCamera(
+          45,
+          window.innerWidth / window.innerHeight,
+          1,
+          2000,
+        )
+        camera.position.set(100, 200, 300)
 
-				camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 1, 2000 );
-				camera.position.set( 100, 200, 300 );
+        scene = new THREE.Scene()
+        scene.background = new THREE.Color(0x111111)
+        // scene.fog = new THREE.Fog( 0xa0a0a0, 200, 1000 );
 
-				scene = new THREE.Scene();
-				scene.background = new THREE.Color( 0xa0a0a0 );
-				scene.fog = new THREE.Fog( 0xa0a0a0, 200, 1000 );
+        const hemiLight = new THREE.HemisphereLight(0x555555, 0xa0a0a0, 0.9)
+        hemiLight.position.set(30, 200, 0)
+        scene.add(hemiLight)
 
-				const hemiLight = new THREE.HemisphereLight( 0xffffff, 0x444444 );
-				hemiLight.position.set( 0, 200, 0 );
-				scene.add( hemiLight );
+        const dirLight = new THREE.DirectionalLight(0xffffff, 0.9)
+        dirLight.position.set(0, 200, 100)
+        dirLight.castShadow = true
+        dirLight.shadow.camera.top = 180
+        dirLight.shadow.camera.bottom = -100
+        dirLight.shadow.camera.left = -120
+        dirLight.shadow.camera.right = 120
+        scene.add(dirLight)
 
-				const dirLight = new THREE.DirectionalLight( 0xffffff );
-				dirLight.position.set( 0, 200, 100 );
-				dirLight.castShadow = true;
-				dirLight.shadow.camera.top = 180;
-				dirLight.shadow.camera.bottom = - 100;
-				dirLight.shadow.camera.left = - 120;
-				dirLight.shadow.camera.right = 120;
-				scene.add( dirLight );
+        // ground
+        const mesh = new THREE.Mesh(
+          new THREE.PlaneGeometry(100000000000, 100000000000),
+          new THREE.MeshPhongMaterial({ color: 0x999999, depthWrite: false }),
+        )
+        mesh.rotation.x = -Math.PI / 2
+        mesh.receiveShadow = true
+        scene.add(mesh)
 
-				// scene.add( new THREE.CameraHelper( dirLight.shadow.camera ) );
+        const grid = new THREE.GridHelper(1000000, 10000, 0xffffff, 0xffffff)
+        grid.material.opacity = 0.2
+        grid.material.transparent = true
+        scene.add(grid)
 
-				// ground
-				const mesh = new THREE.Mesh( new THREE.PlaneGeometry( 2000, 2000 ), new THREE.MeshPhongMaterial( { color: 0x999999, depthWrite: false } ) );
-				mesh.rotation.x = - Math.PI / 2;
-				mesh.receiveShadow = true;
-				scene.add( mesh );
+        // Loading the Earth
+        const textureEarth = new THREE.TextureLoader().load(
+          'textures/2_no_clouds_4k.jpg',
+        )
+        const materialEarth = new THREE.MeshPhongMaterial({ map: textureEarth })
+        const geometry = new THREE.SphereGeometry(15, 32, 16)
+        const sphere = new THREE.Mesh(geometry, materialEarth)
+        earthModel = sphere
+        scene.add(sphere)
 
-				const grid = new THREE.GridHelper( 2000, 20, 0x000000, 0x000000 );
-				grid.material.opacity = 0.2;
-				grid.material.transparent = true;
-				scene.add( grid );
+        // Load the sun
+        const textureSun = new THREE.TextureLoader().load('textures/sun.jpg')
+        const materialSun = new THREE.MeshPhongMaterial({ map: textureSun })
+        const geometrySun = new THREE.SphereGeometry(50, 32, 16)
+        const sphereSun = new THREE.Mesh(geometrySun, materialSun)
+        sunModel = sphereSun
 
-				// model
+        // Add glow to sun
+        const sunGlow = new THREE.Mesh(
+          new THREE.SphereGeometry(50, 32, 16),
+          new THREE.MeshBasicMaterial({
+            color: 0xffff00,
+            transparent: true,
+            opacity: 0.5,
+          }),
+        )
+        scene.add(sphereSun)
+        sunModel.position.set(100, 100, 100)
 
-        const textureEarth = new THREE.TextureLoader().load( 'textures/Earth_Lod.png' )
-        const materialEarth = new THREE.MeshBasicMaterial( { map: textureEarth } );
+        renderer = new THREE.WebGLRenderer({ antialias: true })
+        renderer.setPixelRatio(window.devicePixelRatio)
+        renderer.setSize(window.innerWidth, window.innerHeight)
+        renderer.shadowMap.enabled = true
+        container.appendChild(renderer.domElement)
 
-				const loader = new FBXLoader();
-				loader.load( 'models/fbx/Earth_Lod.fbx', function ( object ) {
-					object.traverse( function ( child ) {
-						if ( child.isMesh ) {
-							child.castShadow = true;
-							child.receiveShadow = true;
-              child.material.map = textureEarth
-              child.material.needsUpdate = true;
-						}
-					} );
-					scene.add( object );
-				} );
+        const controls = new OrbitControls(camera, renderer.domElement)
+        controls.target.set(0, 100, 0)
+        controls.update()
 
+        window.addEventListener('resize', onWindowResize)
 
+        // stats
+        stats = new Stats()
+        container.appendChild(stats.dom)
+      }
 
-				renderer = new THREE.WebGLRenderer( { antialias: true } );
-				renderer.setPixelRatio( window.devicePixelRatio );
-				renderer.setSize( window.innerWidth, window.innerHeight );
-				renderer.shadowMap.enabled = true;
-				container.appendChild( renderer.domElement );
+      function onWindowResize() {
+        camera.aspect = window.innerWidth / window.innerHeight
+        camera.updateProjectionMatrix()
+        renderer.setSize(window.innerWidth, window.innerHeight)
+      }
 
-				const controls = new OrbitControls( camera, renderer.domElement );
-				controls.target.set( 0, 100, 0 );
-				controls.update();
-
-				window.addEventListener( 'resize', onWindowResize );
-
-				// stats
-				stats = new Stats();
-				container.appendChild( stats.dom );
-
-			}
-
-			function onWindowResize() {
-
-				camera.aspect = window.innerWidth / window.innerHeight;
-				camera.updateProjectionMatrix();
-
-				renderer.setSize( window.innerWidth, window.innerHeight );
-
-			}
-
-			//
-
-			function animate() {
-
-				requestAnimationFrame( animate );
-
-				const delta = clock.getDelta();
-
-				if ( mixer ) mixer.update( delta );
-
-				renderer.render( scene, camera );
-
-				stats.update();
-
-			}
-
-
+      function animate() {
+        requestAnimationFrame(animate)
+        const delta = clock.getDelta()
+        if (mixer) mixer.update(delta)
+        renderer.render(scene, camera)
+        earthModel.rotation.y += 0.05
+        stats.update()
+      }
     </script>
   </body>
 </html>

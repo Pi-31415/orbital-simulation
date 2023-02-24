@@ -444,12 +444,12 @@ setTimeout(function () {
 
 
 // Automatically readjust teh canvas size when the window is resized for #projector
-$(window).resize(function () {
-  var canvas = document.getElementById("projector");
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
-  console.log("resizing");
-});
+// $(window).resize(function () {
+//   var canvas = document.getElementById("projector");
+//   canvas.width = window.innerWidth;
+//   canvas.height = window.innerHeight;
+//   console.log("resizing");
+// });
 
 
 // When the user clicks on any button, play the sound sounds/click.mp3
