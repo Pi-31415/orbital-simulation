@@ -16,7 +16,7 @@
     <!-- Logo -->
     <div class="logo">
       <h2 style="padding: 0px; margin: 0px; font-size: 3em;">
-        Kepler's Laws Simulation
+        Kepler's Laws</br><span style="font-size: 0.8em;">Simulation</span>
       </h2>
       <p class="neuropol">
         <b>Pi Ko</b>
@@ -199,6 +199,9 @@
 
       let earthModel, sunModel
 
+
+      var sunBool = false;
+
       let camera, scene, renderer, stats, composer
 
       const clock = new THREE.Clock()
@@ -239,11 +242,11 @@
         renderer.shadowMap.enabled = true
         container.appendChild(renderer.domElement)
 
-        const hemiLight = new THREE.HemisphereLight(0x555555, 0xa0a0a0, 0.9)
-        hemiLight.position.set(30, 200, 0)
+        const hemiLight = new THREE.HemisphereLight(0x111111, 0xa0a0a0, 0.9)
+        hemiLight.position.set(0, 200, 0)
         scene.add(hemiLight)
 
-        const dirLight = new THREE.DirectionalLight(0xffffff, 0.9)
+        const dirLight = new THREE.DirectionalLight(0xffffff, 1.0)
         dirLight.position.set(0, 200, 100)
         dirLight.castShadow = true
         dirLight.shadow.camera.top = 180
@@ -291,7 +294,7 @@
         // Load the sun
         const textureSun = new THREE.TextureLoader().load('textures/sun.jpg')
         const materialSun = new THREE.MeshPhongMaterial({ map: textureSun })
-        const geometrySun = new THREE.SphereGeometry(50, 32, 16)
+        const geometrySun = new THREE.SphereGeometry(35, 32, 16)
         const sphereSun = new THREE.Mesh(geometrySun, materialSun)
         sunModel = sphereSun
 
@@ -302,6 +305,7 @@
 
         const controls = new OrbitControls(camera, renderer.domElement)
         controls.minPolarAngle = Math.PI * 0.3
+
         controls.target.set(0, 100, 0)
         controls.update()
 
@@ -319,12 +323,24 @@
         composer.setSize( width, height );
       }
 
+      
       function animate() {
         requestAnimationFrame(animate)
         const delta = clock.getDelta()
         if (mixer) mixer.update(delta)
         renderer.render(scene, camera)
-        earthModel.rotation.y += 0.05
+        
+        
+        // earthModel.rotation.y += 0.05
+        const scale = 100;
+        sunModel.position.x = scale*4;
+        sunModel.position.y = 0;
+
+        earthModel.position.x = scale*5*Math.cos(0.3*3.141592*clock.getElapsedTime());
+        earthModel.position.z = scale*3*Math.sin(0.3*3.141592*clock.getElapsedTime());
+        
+        console.log(earthModel.position.x,earthModel.position.y);
+
         stats.update()
         composer.render();
       }
