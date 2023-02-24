@@ -227,6 +227,7 @@ body {
     background-image: linear-gradient(to bottom, rgba(52, 159, 175, 0.5), rgba(11, 77, 80, 0.5));
     box-shadow: 0 0 70px rgba(42, 151, 146, 0.326), 0 5px 20px rgba(48, 207, 255, 0.5), inset 0 1px #527983, inset 0 -1px #277f84;
     color: #00ffff;
+    margin : 40px 0px 40px 0px;
 }
 
 .button.ice:before {
