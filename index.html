@@ -80,6 +80,7 @@
     <script src="js/utils.js"></script>
 
     <script type="module">
+      // Import necessary modules
       import * as THREE from 'three'
       import Stats from 'three/addons/libs/stats.module.js'
       import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
@@ -88,44 +89,74 @@
       import { RenderPass } from 'three/addons/postprocessing/RenderPass.js'
       import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js'
       import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js'
-
+      // Declare earth and sun
       let earthModel, sunModel
-
-
-      var sunBool = false;
+      // Declare gloabal variables for three.js
       let camera, scene, renderer, stats, composer
+      // Declare clock
       const clock = new THREE.Clock()
+      // Bloom effect for more beautiful graphics, the following declare bloom parameters
       let mixer
-      // Bloom Parameters
       const params = {
         exposure: 1,
         bloomStrength: 0.5,
         bloomThreshold: 0,
         bloomRadius: 0.2,
       }
-      init()
-      animate()
-      function init() {
+
+      // The following are utility/helper functions
+
+      function onWindowResize() {
+        // this function is called when the window is resized
+        // This is to keep things at the center
+        camera.aspect = window.innerWidth / window.innerHeight
+        camera.updateProjectionMatrix()
+        renderer.setSize(window.innerWidth, window.innerHeight)
+        composer.setSize(window.innerWidth, window.innerHeight);
+      }
+
+      function addTrail(x,z){
+        // Create a red sphere at the position x and z of earthModel
+        const geometry = new THREE.SphereGeometry( 0.5, 32, 32 );
+        const material = new THREE.MeshBasicMaterial( {color: 0xff0000} );
+        const sphere = new THREE.Mesh( geometry, material );
+        scene.add( sphere );
+        sphere.position.x = x;
+        sphere.position.z = z;
+        sphere.position.y = 0;
+        // Automatically destroy the sphere after 3 seconds
+        setTimeout(function(){ scene.remove(sphere); }, 20000);
+      }
+      // This function sets up the necessary 3D graphics and rendering settings
+      function setUpGraphics(){
+        // Create a div container for three.js
         const container = document.createElement('div')
+        // Append the container to the div called three-renderer
         document.body.appendChild(container)
+        // Create a camera
         camera = new THREE.PerspectiveCamera(
           45,
           window.innerWidth / window.innerHeight,
           1,
           2000,
         )
+        // Set the camera position
         camera.position.set(50, 800, 1000)
+        // Create a scene
         scene = new THREE.Scene()
+        // Set the background color
         scene.background = new THREE.Color(0x050505)
-        // scene.fog = new THREE.Fog( 0xa0a0a0, 200, 1000 );
+        // Create a renderer
         renderer = new THREE.WebGLRenderer({ antialias: true })
         renderer.setPixelRatio(window.devicePixelRatio)
         renderer.setSize(window.innerWidth, window.innerHeight)
         renderer.shadowMap.enabled = true
         container.appendChild(renderer.domElement)
+        // Add a light
         const hemiLight = new THREE.HemisphereLight(0x111111, 0xa0a0a0, 0.9)
         hemiLight.position.set(0, 200, 0)
         scene.add(hemiLight)
+        // Add another directional light
         const dirLight = new THREE.DirectionalLight(0xffffff, 1.0)
         dirLight.position.set(0, 200, 100)
         dirLight.castShadow = true
@@ -134,7 +165,7 @@
         dirLight.shadow.camera.left = -120
         dirLight.shadow.camera.right = 120
         scene.add(dirLight)
-        // ground
+        // Create the ground
         const mesh = new THREE.Mesh(
           new THREE.PlaneGeometry(100000000000, 100000000000),
           new THREE.MeshPhongMaterial({ color: 0x999999, depthWrite: false }),
@@ -142,11 +173,12 @@
         mesh.rotation.x = -Math.PI / 2
         mesh.receiveShadow = true
         scene.add(mesh)
+        // Create the grid
         const grid = new THREE.GridHelper(1000000, 10000, 0xffffff, 0xffffff)
         grid.material.opacity = 0.2
         grid.material.transparent = true
         scene.add(grid)
-        // Add GLow
+        // Add Glow/Bloom effect
         const renderScene = new RenderPass( scene, camera );
 				const bloomPass = new UnrealBloomPass( new THREE.Vector2( window.innerWidth, window.innerHeight ), 1.5, 0.4, 0.85 );
 				bloomPass.threshold = params.bloomThreshold;
@@ -155,7 +187,7 @@
 				composer = new EffectComposer( renderer );
 				composer.addPass( renderScene );
 				composer.addPass( bloomPass );
-        // Loading the Earth
+        // Load the Earth model and textures
         const textureEarth = new THREE.TextureLoader().load(
           'textures/2_no_clouds_4k.jpg',
         )
@@ -164,7 +196,7 @@
         const sphere = new THREE.Mesh(geometry, materialEarth)
         earthModel = sphere
         scene.add(sphere)
-        // Load the sun
+        // Load the sun model and textures
         const textureSun = new THREE.TextureLoader().load('textures/sun.jpg')
         const materialSun = new THREE.MeshPhongMaterial({ map: textureSun })
         const geometrySun = new THREE.SphereGeometry(20, 32, 16)
@@ -183,18 +215,34 @@
         container.appendChild(stats.dom)
       }
 
-      function onWindowResize() {
-        camera.aspect = window.innerWidth / window.innerHeight
-        camera.updateProjectionMatrix()
-        renderer.setSize(window.innerWidth, window.innerHeight)
-        composer.setSize(window.innerWidth, window.innerHeight);
+      // This function is called every frame to update the graphics
+      function setUpGraphicsAnimate(){
+        requestAnimationFrame(animate)
+        // create a timestep
+        const delta = clock.getDelta()
+        // Other helper functions for 3D graphics
+        if (mixer) mixer.update(delta)
+        renderer.render(scene, camera)
+      }
+
+        // This function is called every frame to display the graphics
+      function renderGraphics(){
+        stats.update()
+        composer.render();
+      }
+
+      // Main function, initialization and animation loop
+      init()
+      animate()
+      // Initialization function
+      function init() {
+        // Set up the graphics
+        setUpGraphics() 
       }
 
       function animate() {
-        requestAnimationFrame(animate)
-        const delta = clock.getDelta()
-        if (mixer) mixer.update(delta)
-        renderer.render(scene, camera)
+        setUpGraphicsAnimate();
+        // Here we write the main code for simulation using timesteps
         earthModel.rotation.y += 0.2
         const scale = 100;
         sunModel.position.x = scale*4;
@@ -206,18 +254,10 @@
         // NOrmalize speed between 0 and 0.1
         earthModel.position.x = scale*5*Math.cos(speed*3.141592*clock.getElapsedTime());
         earthModel.position.z = scale*3*Math.sin(speed*3.141592*clock.getElapsedTime());
-        // Create a red sphere at the position x and z of earthMOdel
-        const geometry = new THREE.SphereGeometry( 0.5, 32, 32 );
-        const material = new THREE.MeshBasicMaterial( {color: 0xff0000} );
-        const sphere = new THREE.Mesh( geometry, material );
-        scene.add( sphere );
-        sphere.position.x = earthModel.position.x;
-        sphere.position.z = earthModel.position.z;
-        sphere.position.y = 0;
-        // Automatically destroy the sphere after 3 seconds
-        setTimeout(function(){ scene.remove(sphere); }, 20000);
-        stats.update()
-        composer.render();
+        // Add a trail to the earth
+        addTrail(earthModel.position.x, earthModel.position.z);
+        // Render the graphics
+        renderGraphics()
       }
     </script>
   </body>
