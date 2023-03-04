@@ -35,13 +35,57 @@
       </div>
     </header>
 
+    <!-- Controls -->
+    <div id="controls">
+      <h3 class="slider-value" style="font-size: 1.5em;padding-bottom: 5px;">Controls</h3>
+      <!-- U -->
+      <div class="slider-value" id="u-value">sdf</div>
+      <div class="slider">
+        <input type="range" min="-30" max="30" value="0" class="slider-range" id="u-value-slider">
+        <div class="slider-fill"></div>
+      </div>
+      <br>
+      <!-- V -->
+      <div class="slider-value" id="v-value">sdf</div>
+      <div class="slider">
+        <input type="range" min="-30" max="30" value="0" class="slider-range"  id="v-value-slider">
+        <div class="slider-fill"></div>
+      </div>
+      <br>
+      <!-- X -->
+      <div class="slider-value" id="x-value">sdf</div>
+      <div class="slider">
+        <input type="range" min="-400" max="400" value="0" class="slider-range"  id="x-value-slider">
+        <div class="slider-fill"></div>
+      </div>
+      <br>
+      <!-- Y -->
+      <div class="slider-value" id="y-value">sdf</div>
+      <div class="slider">
+        <input type="range" min="-400" max="400" value="0" class="slider-range"  id="y-value-slider">
+        <div class="slider-fill"></div>
+      </div>
+      <br>
+      <!-- Time Speed -->
+      <div class="slider-value" id="speed-value">sdf</div>
+      <div class="slider">
+        <input type="range" min="0" max="10" value="1" class="slider-range"  id="speed-value-slider">
+        <div class="slider-fill"></div>
+      </div>
+      <br>
+      <div class="button ice" id="pause">Pause</div>
+      <div class="button ice" id="start" style="text-align:center">Start <br>(u, v and speed only)</div>
+      <div class="button ice" id="reset">Reset</div>
+      <br>
+    </div>
+
     <!-- div called three-renderer -->
     <div id="three-renderer"></div>
 
     <div class="btn-container">
-      <div class="button ice" id="first">Kepler's 1<sup>st</sup> Law</div>
-      <div class="button ice" id="second">Kepler's 2<sup>nd</sup> Law</div>
-      <div class="button ice" id="third">Kepler's 3<sup>rd</sup> Law</div>
+      <div class="button ice" id="first">Toggle Orbit</div>
+      <div class="button ice" id="record">Record Data</div>
+      <div class="button ice" id="save">Save Data</div>
     </div>
 
     <footer>
@@ -98,13 +142,38 @@
       let gravityForce;
       // Following are for arrow helpers
       // Following are line visualizations
-      let distance_line,text,arrowSun,arrowEarth,trailOn,ButtonFirst,ButtonSecond,ButtonThird;
+      let distance_line,text,arrowSun,arrowEarth,trailOn,ButtonFirst,ButtonSecond,ButtonThird,arrowVelocity,speed,Buttonrecord,Buttonsave,isRecording;
       // This is to scale down the model so that it fits on the screen
       // This is for visualization arrows
-      let scale = 150
+      let scale = 100
+
+      // Create array to store time,x,y,u,v,r
+      let time = []
+      let x_array = []
+      let y_array = []
+      let u_array = []
+      let v_array = []
+      let r_array = []
+     
 
       // Declare gloabal variables for three.js
-      let camera, scene, renderer, stats, composer
+      let camera, scene, renderer, stats, composer;
+
+      // UI
+      // Sliders
+      const uSlider = document.getElementById('u-value-slider');
+      const vSlider = document.getElementById('v-value-slider');
+      const xSlider = document.getElementById('x-value-slider');
+      const ySlider = document.getElementById('y-value-slider');
+      const speedSlider = document.getElementById('speed-value-slider');
+
+      // Get all the slider value elements
+      const uValue = document.getElementById('u-value');
+      const vValue = document.getElementById('v-value');
+      const xValue = document.getElementById('x-value');
+      const yValue = document.getElementById('y-value');
+      const speedValue = document.getElementById('speed-value');
+
       // Declare clock
       const clock = new THREE.Clock()
       // Bloom effect for more beautiful graphics, the following declare bloom parameters
@@ -137,32 +206,80 @@
         sphere.position.z = z;
         sphere.position.y = 0;
         // Automatically destroy the sphere after 3 seconds
-        setTimeout(function(){ scene.remove(sphere); }, 20000);
+        setTimeout(function(){ scene.remove(sphere); }, 200000);
         }
       }
 
       // These functions alternate between the visualizations for three laws
       function firstLaw(){
-        trailOn = true;
+        trailOn = !trailOn;
       }
-      function secondLaw(){
-        trailOn = false;
-      }
-      function thirdLaw(){
-        trailOn = false;
-      }
+
+
+        // Decimal truncation
+        function toFixed(num, fixed) {
+    var re = new RegExp('^-?\\d+(?:\.\\d{0,' + (fixed || -1) + '})?');
+    return num.toString().match(re)[0];
+}
+
+      Buttonrecord = document.getElementById("record");
+      Buttonrecord.addEventListener("click", record);
+      // This function records the current state of the simulation
+      function record()
+      {
+        Buttonsave.style.visibility = "visible";
+        // Show button record
+      Buttonrecord.style.visibility = "hidden";
+        // console log
+        console.log("Recorded");
+        isRecording = true;
+      };
+
+      Buttonsave = document.getElementById("save");
+      Buttonsave.addEventListener("click", save);
+      // This function saves the recorded data to a csv file
+      function save()
+      {
+        Buttonsave.style.visibility = "hidden";
+        // Show button record
+      Buttonrecord.style.visibility = "visible";
+        isRecording = false;
+        // consol
+        console.log("Saved");
+        // Save the recorded data to a csv file
+        // Create a csv file
+        var csv = 'time,x,y,u,v,r\n';
+        // Loop through the arrays and add the data to the csv file
+        for (var i = 0; i < time.length; i++) {
+            csv += time[i]+','+x_array[i]+','+y_array[i]+','+u_array[i]+','+v_array[i]+','+r_array[i]+'\n';
+        }
+        // Create a link to download the csv file
+        var hiddenElement = document.createElement('a');
+        hiddenElement.href = 'data:text/csv;charset=utf-8,' + encodeURI(csv);
+        hiddenElement.target = '_blank';
+        hiddenElement.download = 'data.csv';
+        hiddenElement.click();
+        // Clear the arrays
+        time = [];
+        x_array = [];
+        y_array = [];
+        u_array = [];
+        v_array = [];
+        r_array = [];
+      };
+
+
 
 
       // This function sets up the necessary 3D graphics and rendering settings
       function setUpGraphics(){
          // Get buttons
+         // hide Button Save
+      Buttonsave.style.visibility = "hidden";
+        // Show button record
+      Buttonrecord.style.visibility = "visible";
       ButtonFirst = document.getElementById("first");
-      ButtonSecond = document.getElementById("second");
-      ButtonThird = document.getElementById("third");
-
       ButtonFirst.addEventListener("click", firstLaw);
-      ButtonSecond.addEventListener("click", secondLaw);
-      ButtonThird.addEventListener("click", thirdLaw);
         // Create a div container for three.js
         const container = document.createElement('div')
         // Append the container to the div called three-renderer
@@ -257,6 +374,7 @@
         if (mixer) mixer.update(delta)
         renderer.render(scene, camera)
       }
+     
 
         // This function is called every frame to display the graphics
       function renderGraphics(){
@@ -275,7 +393,7 @@
         // Add text on earth
         const loader = new FontLoader();
         loader.load( 'fonts/helvetiker_regular.typeface.json', function ( font ) {
-        const color = 0xffffff;
+        const color = 0xcd2d2;
         const matDark = new THREE.LineBasicMaterial( {
           color: color,
           side: THREE.DoubleSide
@@ -286,11 +404,14 @@
           opacity: 0.8,
           side: THREE.DoubleSide
         } );
-        const message = '   Three.js\nSimple text.';
-        const shapes = font.generateShapes( message, 10 );
-        const geometry = new THREE.ShapeGeometry( shapes );
+        // calculate speed from u and v
+        var speed = Math.sqrt(u*u + v*v);
+        // Write message as speed
+        var message = 'Planet';
+        var shapes = font.generateShapes( message, 15 );
+        var geometry = new THREE.ShapeGeometry( shapes );
         geometry.computeBoundingBox();
-        const xMid = - 0.5 * ( geometry.boundingBox.max.x - geometry.boundingBox.min.x );
+        var xMid = - 0.5 * ( geometry.boundingBox.max.x - geometry.boundingBox.min.x );
         geometry.translate( xMid, 0, 0 );
         // make shape ( N.B. edge view not visible )
         text = new THREE.Mesh( geometry, matLite );
@@ -312,8 +433,96 @@
         const hex2 = 0xffff00;
         arrowEarth = new THREE.ArrowHelper( dir2, origin2, gravityForce, hex2 );
         scene.add( arrowEarth  );
+
+        // Add a green arrow visualizing the velocity of earth, based on u and v
+        // create a vector from u and v
+        const dir3 = new THREE.Vector3(u,v,0);
+        const origin3 = earthModel.position;
+        const hex3 = 0x00ff00;
+        arrowVelocity = new THREE.ArrowHelper( dir3, origin3, 0, hex3 );
+        scene.add( arrowVelocity  );
+
+
       });
       }
+
+      const pauseButton = document.getElementById('pause');
+      pauseButton.addEventListener('click', () => {
+        uSlider.value = u;
+        vSlider.value = v;
+        xSlider.value = x;
+        ySlider.value = y;
+        speed = 0;
+        speedSlider.value = speed;
+        uValue.textContent = `U: ${toFixed(u,1)}`;
+        vValue.textContent = `V: ${toFixed(v,1)}`;
+        xValue.textContent = `X: ${toFixed(x,1)}`;
+        yValue.textContent = `Y: ${toFixed(y,1)}`;
+        speedValue.textContent = `Time Speed: ${toFixed(speed,0)}`;
+      });
+
+      const resetButton = document.getElementById('reset');
+      resetButton.addEventListener('click', () => {
+        x = 150; // m
+        y = 250; // m
+        u = -20; // m/s
+        v = 0; // m/s
+        uSlider.value = u;
+        vSlider.value = v;
+        xSlider.value = x;
+        ySlider.value = y;
+        speed = 1;
+        speedSlider.value = speed;
+        uValue.textContent = `U: ${toFixed(u,1)}`;
+        vValue.textContent = `V: ${toFixed(v,1)}`;
+        xValue.textContent = `X: ${toFixed(x,1)}`;
+        yValue.textContent = `Y: ${toFixed(y,1)}`;
+        speedValue.textContent = `Time Speed: ${toFixed(speed,0)}`;
+      });
+      
+
+      // Set the initial values of the sliders
+      // Get the start button element
+      const startButton = document.getElementById('start');
+
+      // Add event listener to start button
+      startButton.addEventListener('click', () => {
+        u = uSlider.value; // m/s
+        v = vSlider.value; // m/s
+        // if speed is 0, make it 1
+        if (speed == 0){
+          speed = 1;
+        }
+        // update slider
+        speedSlider.value = speed;
+        uValue.textContent = `U: ${toFixed(u,1)}`;
+        vValue.textContent = `V: ${toFixed(v,1)}`;
+        xValue.textContent = `X: ${toFixed(x,1)}`;
+        yValue.textContent = `Y: ${toFixed(y,1)}`;
+        speedValue.textContent = `Time Speed: ${toFixed(speed,0)}`;
+      });
+
+      // Update slider values
+      // Add event listener to each slider element
+    uSlider.addEventListener('input', () => {
+      uValue.textContent = `U: ${uSlider.value}`;
+    });
+
+    vSlider.addEventListener('input', () => {
+      vValue.textContent = `V: ${vSlider.value}`;
+    });
+
+    xSlider.addEventListener('input', () => {
+      xValue.textContent = `X: ${xSlider.value}`;
+    });
+
+    ySlider.addEventListener('input', () => {
+      yValue.textContent = `Y: ${ySlider.value}`;
+    });
+
+    speedSlider.addEventListener('input', () => {
+      speedValue.textContent = `Time Speed: ${speedSlider.value}`;
+    });
 
       function updateQuantities(){
         // This function updates the quantities
@@ -336,6 +545,14 @@
         arrowEarth.position.z = earthModel.position.z;
         const dir2 = new THREE.Vector3().subVectors( sunModel.position, earthModel.position ).normalize();
         arrowEarth.setDirection(dir2);
+        // update arrowVelocity to point to earth
+        arrowVelocity.position.x = earthModel.position.x;
+        arrowVelocity.position.y = earthModel.position.y;
+        arrowVelocity.position.z = earthModel.position.z;
+        const dir3 = new THREE.Vector3(u,0,v);
+        arrowVelocity.setDirection(dir3);
+        // update the length of the arrowVelocity
+        arrowVelocity.setLength(5*Math.sqrt(Math.pow(u, 2) + Math.pow(v, 2)));
       }
 
       // Main function, initialization and animation loop
@@ -356,9 +573,9 @@
         // r = distance between the sun and the earth
         G = 100 // m^3 kg^-1 s^-2
         M = 10 // kg
-        x = 100; // m
-        y = 300; // m
-        u = -28; // m/s
+        x = 150; // m
+        y = 250; // m
+        u = -20; // m/s
         v = 0; // m/s
         dt = 0.1; // s
         r = Math.sqrt(Math.pow(x, 2) + Math.pow(y, 2)); // m
@@ -366,6 +583,20 @@
         // Set the initial positions of sun and earth.
         sunModel.position.set(0, 0, 0)
         earthModel.position.set(x, 0, y)
+        speed = 1; //set simulation speed
+        // Update Values
+        uValue.textContent = `U: ${toFixed(u,1)}`;
+        vValue.textContent = `V: ${toFixed(v,1)}`;
+        xValue.textContent = `X: ${toFixed(x,1)}`;
+        yValue.textContent = `Y: ${toFixed(y,1)}`;
+        speedValue.textContent = `Time Speed: ${toFixed(speed,0)}`;
+        // Also update the slider values
+        uSlider.value = u;
+        vSlider.value = v;
+        xSlider.value = x;
+        ySlider.value = y;
+        speedSlider.value = speed;
+        trailOn = true;
         // Visualize forces function
         visualizeQuantities()
       }
@@ -373,17 +604,28 @@
       function animate() {
         setUpGraphicsAnimate();
         // Here we write the main code for simulation using timesteps
-        var speed = 0.1;
+        dt = 0.1 * speed;
         // Simulate the earth
         r = Math.sqrt(Math.pow(x, 2) + Math.pow(y, 2)); // m
         u = u - (G*M*x*dt)/(Math.pow(r, 3)); // m/s
         v = v - (G*M*y*dt)/(Math.pow(r, 3)); // m/s
         x = x + u*dt; // m
         y = y + v*dt; // m
+        // Record Data
+        if(isRecording){
+          // Record the current state of the simulation
+          // Record time
+          time.push(clock.getElapsedTime());
+          // Record x,y,u,v,r
+          x_array.push(x);
+          y_array.push(y);
+          u_array.push(u);
+          v_array.push(v);
+          r_array.push(r);
+        }
         // console log r u v x y
         // console.log(r, u, v, x, y,gravityForce);
         earthModel.position.set(x, 0, y)
-
         // add trail
         addTrail(earthModel.position.x, earthModel.position.z);
         // Update the quantities for visualization
